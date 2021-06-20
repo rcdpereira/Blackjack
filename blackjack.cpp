@@ -4,9 +4,8 @@
 #include <ctime>
 #include <random>
 
-// Determine the ranks each card can have
+// Create cards ranks
 enum class CardRank
-// Create the cards ranks
 {
 	rank_2,
 	rank_3,
@@ -25,9 +24,8 @@ enum class CardRank
 	max_ranks
 };
 
-// Determine the suits each card can have
+// Create cards suits
 enum class CardSuit
-// Create the cards suits
 {
 	suit_clubs,
 	suit_diamonds,
@@ -44,13 +42,14 @@ struct Card
 	CardSuit suit{};
 };
 
+// Track player's points and qty of aces
 struct Player 
 {
 	int points{};
 	int aces{};
 };
 
-// User-defined types that will appear several times
+// User-defined types that will appear a few times
 using deck_type = std::array<Card, 52>;
 using index_type = deck_type::size_type;
 
@@ -59,30 +58,29 @@ void printCard(const Card& card)
 {
 	switch (card.rank)
 	{
-	case CardRank::rank_2:	std::cout << '2';		break;
-	case CardRank::rank_3:	std::cout << '3';		break;
-	case CardRank::rank_4:	std::cout << '4';		break;
-	case CardRank::rank_5:	std::cout << '5';		break;
-	case CardRank::rank_6:	std::cout << '6';		break;
-	case CardRank::rank_7:	std::cout << '7';		break;
-	case CardRank::rank_8:	std::cout << '8';		break;
-	case CardRank::rank_9:	std::cout << '9';		break;
-	case CardRank::rank_10:	std::cout << "10";		break;
+	case CardRank::rank_2:	std::cout << '2';	break;
+	case CardRank::rank_3:	std::cout << '3';	break;
+	case CardRank::rank_4:	std::cout << '4';	break;
+	case CardRank::rank_5:	std::cout << '5';	break;
+	case CardRank::rank_6:	std::cout << '6';	break;
+	case CardRank::rank_7:	std::cout << '7';	break;
+	case CardRank::rank_8:	std::cout << '8';	break;
+	case CardRank::rank_9:	std::cout << '9';	break;
+	case CardRank::rank_10:	std::cout << "10";	break;
 	case CardRank::rank_J:	std::cout << "Jack";	break;
 	case CardRank::rank_Q:	std::cout << "Queen";	break;
 	case CardRank::rank_K:	std::cout << "King";	break;
-	case CardRank::rank_A:	std::cout << "Ace";		break;
+	case CardRank::rank_A:	std::cout << "Ace";	break;
 	default:
 		std::cout << '?';
 		break;
 	}
 	switch (card.suit)
 	{
-	case CardSuit::suit_clubs:		std::cout << " of Clubs";		break;
+	case CardSuit::suit_clubs:	std::cout << " of Clubs";	break;
 	case CardSuit::suit_diamonds:	std::cout << " of Diamonds";	break;
-	case CardSuit::suit_spades:		std::cout << " of Spades";		break;
-	case CardSuit::suit_hearts:		std::cout << " of Hearts";		break;
-
+	case CardSuit::suit_spades:	std::cout << " of Spades";	break;
+	case CardSuit::suit_hearts:	std::cout << " of Hearts";	break;
 	default:
 		std::cout << '?';
 		break;
@@ -93,7 +91,6 @@ void printCard(const Card& card)
 deck_type createDeck()
 {
 	deck_type deck{};
-
 	index_type card{ 0 };
 	auto suits{ static_cast<int>(CardSuit::max_suits) };
 	auto ranks{ static_cast<int>(CardRank::max_ranks) };
@@ -112,6 +109,9 @@ deck_type createDeck()
 	return deck;
 }
 
+// Not used in the game
+// Can be called to validate createDeck()
+// Can be called to verify shuffleDeck() efficiency
 void printDeck(const deck_type& deck)
 {
 	for (const auto& card : deck)
@@ -121,11 +121,13 @@ void printDeck(const deck_type& deck)
 	}
 }
 
+// Use a seed to shuffle the deck (random sort)
+// The game takes a few seconds, system time is a good seed
+// Used printDeck to check shuffle efficiency
 void shuffleDeck(deck_type& deck)
 {
-	// mt is static so it only gets seeded once.
+	// mt is static so it only gets seeded once
 	static std::mt19937_64 mt{ static_cast<std::mt19937::result_type>(std::time(nullptr)) };
-
 	std::shuffle(deck.begin(), deck.end(), mt);
 }
 
@@ -146,7 +148,7 @@ int getCardValue(const Card& card)
 	case CardRank::rank_J:	cardValue = 10;	break;
 	case CardRank::rank_Q:	cardValue = 10;	break;
 	case CardRank::rank_K:	cardValue = 10;	break;
-	case CardRank::rank_A:	cardValue = 11;	break;
+	case CardRank::rank_A:	cardValue = 11;	break; // Aces start with 11, changeAcesValue can change to 1 if needed
 	default:
 		std::cout << '?';
 		break;
@@ -154,12 +156,15 @@ int getCardValue(const Card& card)
 	return cardValue;
 }
 
+// Aces have two possible values: 1 or 11
+// Tracking player's aces is used to determine how much the card value shall be
 void trackAces(const deck_type& deck, int& cardOnDeck, Player& player)
 {
 	if (deck[cardOnDeck].rank == CardRank::rank_A)
 		++player.aces;
 }
 
+// Only called if player's points are higher than 21 and the player has aces
 int changeAceValue(Player& player, int& winPoints)
 {
 	const int aceDiff{ 10 }; // Result of 11 - 1: changing aces values can remove 10 points
@@ -167,7 +172,7 @@ int changeAceValue(Player& player, int& winPoints)
 	while (player.aces > 0)
 	{
 		player.points = player.points - aceDiff;
-		--player.aces;
+		--player.aces; // If an ace had its points changed, the "benefit" was already used by player
 		if (player.points <= winPoints)
 			return player.points;
 	}
@@ -249,7 +254,6 @@ int playBlackjack(deck_type& deck)
 			printCard(deck[cardOnDeck]);
 			// Keep track of aces
 			trackAces(deck, cardOnDeck, gambler);
-
 			gambler.points += getCardValue(deck[cardOnDeck]);
 
 			// Check if gambler needs to change the ace values, if available
@@ -273,32 +277,7 @@ int playBlackjack(deck_type& deck)
 			}
 		}
 	}
-	/*
-	do
-	{
-		std::cout << "Hit or Stand? [h]/[s]: ";
-		std::cin >> hitOrStand;
-
-		if (hitOrStand == 'h')
-		{
-			gambler.points += getCardValue(deck[cardOnDeck]);
-			std::cout << "You have " << gambler.points << " points.\n";
-			++cardOnDeck;
-
-			if (gambler.points > winPoints)
-			{
-				std::cout << "Table wins! You lose...\n";
-				return 0;
-			} 
-
-			if (gambler.points == 21)
-			{
-				std::cout << "You win!!!";
-				return 0;
-			}
-		}
-	} while (hitOrStand == 'h');
-	*/
+	
 	//After player has finished, dealer continues to draw cards for table
 	while (dealer.points < minDealerPoints)
 	{
